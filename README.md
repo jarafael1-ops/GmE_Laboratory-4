@@ -121,18 +121,17 @@ FUNCTION analyze_parcels(parcel_data, boundary_data, threshold):
     
     RETURN all_results
 
-
-Reflection
+#Reflection
 1.Where in your system do Sequence, Selection, and Repetition explicitly appear?
-This activity was successfully demontrated the application of spatial data processing using python. I was input the script in the parcels.json, run_lab4.py and demo.py. The final output was saved as suitable_parcels.json. 
+This activity was successfully demontrated the application of spatial data processing using python. I was load the parcel.json data in the run_lab4.py, analysis.py and demo.py. And appear in the terminal. 
 2.If you removed your algorithm planning step, how would your implementation likely change? 
 I learned for this activity If I removed the algorithm planning step would have fundamntal shifted the implementation from the proactive to reactive process. 
 3.Where does spatial behavior live in your system, and why is that important? 
-Spatial behavior was evaluated the geometric attributes like area_sqm , it is importnat because was tranforms static data into actionable intelligence. Wiy=thout these programmed rules the coordinates just a number and an area just value by defining behavior. 
+Spatial behavior was evaluated the geometric attributes like area_sqm , it is importnat because was tranforms static data into actionable intelligence. Without these programmed rules the coordinates just a number and an area just value by defining behavior. 
 4. Why does analysis.py contain structured logic instead of demo.py? 
 This activity for the analysis. py contain structure logic because it was designed  to be intersecting parcels wheareas demo.py is typically was analyze land parcels.
 5.What would happen if all filtering logic were placed inside the Parcel class? 
-For my observation all filtering logic inside the Parcel class was stricly design as object-oriented where each parcel becomes a smart object responsible for its own validation.
+I was not able to do the class filtering in this laboratory.  
 6. If a new rule is added (e.g., “exclude inactive industrial parcels”), how easily can your current 
 design adapt?
 The results did not change because the core design logic remained constant, proving that the structural changes do not impact data output unless the execution code are modified.
