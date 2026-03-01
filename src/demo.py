@@ -1,4 +1,4 @@
-import geopandas as gpd
+import geopanda as gpd
 import os
 
 [
@@ -3306,50 +3306,4 @@ import os
 
 
 
-def analyze_land_parcels(parcel_file, boundary_file, area_threshold):
-    # 1. Load Data
-    if not os.path.exists(parcel_file) or not os.path.exists(boundary_file):
-        print("Error: One or more input files are missing.")
-        return
 
-    parcels = gpd.read_file(parcel_file)
-    boundary = gpd.read_file(boundary_file)
-
-    # 2. Check if no parcels
-    if parcels.empty:
-        print("Error: Parcel dataset is empty. Process terminated.")
-    else:
-        # Pre-process: Project to a metric CRS (e.g., EPSG:3857) for accurate area
-        parcels = parcels.to_crs(epsg=3857)
-        boundary = boundary.to_crs(epsg=3857)
-
-        # 3. Compute Total Area (Active Only)
-        active_parcels = parcels[parcels['status'].str.lower() == 'active'].copy()
-        total_area = active_parcels.geometry.area.sum()
-        print(f"Total Area of Active Parcels: {total_area:,.2f} sqm")
-
-        # 4. Compute Threshold Filter
-        active_parcels['area_sqm'] = active_parcels.geometry.area
-        large_parcels = active_parcels[active_parcels['area_sqm'] > area_threshold]
-        print(f"Parcels exceeding {area_threshold} sqm: {len(large_parcels)}")
-
-        # 5. Compute Zone Count
-        zone_stats = active_parcels.groupby('zone_id').size()
-        print("\nParcels per Zone:")
-        print(zone_stats)
-
-        # 6. Compute Intersections (Spatial Join)
-        # Finds parcels that touch or are inside the development boundary
-        intersected = gpd.sjoin(active_parcels, boundary, predicate='intersects')
-        
-        # Filter for suitability (Residential or Commercial)
-        suitable = intersected[intersected['zone_type'].isin(['Residential', 'Commercial'])]
-        print(f"\nSuitable parcels found in development area: {len(suitable)}")
-
-        # 7. Save Results
-        if not suitable.empty:
-            suitable.to_file("suitable_parcels_output.json", driver='GeoJSON')
-            print("Successfully saved results to 'suitable_parcels_output.json'")
-
-# Example Call:
-# analyze_land_parcels('parcels.json', 'proposed_boundary.json', 5000)

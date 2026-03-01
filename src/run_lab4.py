@@ -3306,50 +3306,81 @@ import os
 
 
 
-def analyze_land_parcels(parcel_file, boundary_file, area_threshold):
+
+import json
+import os
+
+def run_analysis():
+    print("--- Starting Lab 4 Analysis ---")
+    
+    # Pathing
+    input_path = os.path.join('data', 'parcels.json')
+    output_path = os.path.join('output', 'suitable_parcels.json')
+
     # 1. Load Data
-    if not os.path.exists(parcel_file) or not os.path.exists(boundary_file):
-        print("Error: One or more input files are missing.")
+    if not os.path.exists(input_path):
+        print(f"Error: {input_path} not found.")
         return
 
-    parcels = gpd.read_file(parcel_file)
-    boundary = gpd.read_file(boundary_file)
+    with open(input_path, 'r') as f:
+        parcels = json.load(f)
+    
+    print(f"Loaded {len(parcels)} parcels.")
 
-    # 2. Check if no parcels
-    if parcels.empty:
-        print("Error: Parcel dataset is empty. Process terminated.")
-    else:
-        # Pre-process: Project to a metric CRS (e.g., EPSG:3857) for accurate area
-        parcels = parcels.to_crs(epsg=3857)
-        boundary = boundary.to_crs(epsg=3857)
+    # 2. Total Area (Active Only)
+    # Using 'is_active' and 'area_sqm' from your JSON
+    active_parcels = [p for p in parcels if p['is_active'] == True]
+    total_area = sum(p['area_sqm'] for p in active_parcels)
+    print(f"1. Total Active Area: {total_area:,.2f} sqm")
 
-        # 3. Compute Total Area (Active Only)
-        active_parcels = parcels[parcels['status'].str.lower() == 'active'].copy()
-        total_area = active_parcels.geometry.area.sum()
-        print(f"Total Area of Active Parcels: {total_area:,.2f} sqm")
+    # 3. Threshold Filter (> 5000 sqm)
+    threshold = 5000
+    large_parcels = [p for p in active_parcels if p['area_sqm'] > threshold]
+    print(f"2. Parcels exceeding {threshold} sqm: {len(large_parcels)}")
+    
+    if large_parcels:
+        ids = [p['parcel_id'] for p in large_parcels]
+        print(f"   Large Parcel IDs: {ids}")
 
-        # 4. Compute Threshold Filter
-        active_parcels['area_sqm'] = active_parcels.geometry.area
-        large_parcels = active_parcels[active_parcels['area_sqm'] > area_threshold]
-        print(f"Parcels exceeding {area_threshold} sqm: {len(large_parcels)}")
+    # 4. Count per Zone
+    zones = {}
+    for p in active_parcels:
+        z = p['zone']
+        zones[z] = zones.get(z, 0) + 1
+    
+    print("\n3. Active Parcels per Zone:")
+    for zone, count in zones.items():
+        print(f"   {zone}: {count}")
 
-        # 5. Compute Zone Count
-        zone_stats = active_parcels.groupby('zone_id').size()
-        print("\nParcels per Zone:")
-        print(zone_stats)
-
-        # 6. Compute Intersections (Spatial Join)
-        # Finds parcels that touch or are inside the development boundary
-        intersected = gpd.sjoin(active_parcels, boundary, predicate='intersects')
+    # 5. Save the Output (Residential or Commercial > Threshold)
+    suitable = [p for p in large_parcels if p['zone'] in ['Residential', 'Commercial']]
+    
+    if not os.path.exists('output'):
+        os.makedirs('output')
         
-        # Filter for suitability (Residential or Commercial)
-        suitable = intersected[intersected['zone_type'].isin(['Residential', 'Commercial'])]
-        print(f"\nSuitable parcels found in development area: {len(suitable)}")
+    with open(output_path, 'w') as f:
+        json.dump(suitable, f, indent=4)
+        
+    print(f"\n4. Saved {len(suitable)} suitable parcels to {output_path}")
 
-        # 7. Save Results
-        if not suitable.empty:
-            suitable.to_file("suitable_parcels_output.json", driver='GeoJSON')
-            print("Successfully saved results to 'suitable_parcels_output.json'")
+if __name__ == "__main__":
+    run_analysis()
 
-# Example Call:
-# analyze_land_parcels('parcels.json', 'proposed_boundary.json', 5000)
+#If a new rule is added (e.g., “exclude inactive industrial parcels”), how easily can your current 
+#design adapt
+# The new rule: Keep it if it's active OR (if it's inactive, it must NOT be industrial)
+
+def run_analysis():
+    # ... your existing code that loads parcels ...
+    
+    # 4. New Rule Logic (Move it HERE)
+    def is_suitable(p):
+        if p['zone'] == 'Residential' and not p['is_active']:
+            return False
+        return True
+
+    # Now 'parcels' is defined in this scope!
+    adapted_list = [p for p in parcels if is_suitable(p)]
+    print(f"Adapted rule filtered to {len(adapted_list)} parcels.")
+
+    # ... rest of your code ... 
